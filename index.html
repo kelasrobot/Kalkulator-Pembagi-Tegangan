@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kalkulator Pembagi Tegangan</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -39,13 +40,15 @@
         
         <!-- Mode Selection -->
         <div class="mb-6">
-          <div class="flex bg-ios-gray rounded-xl p-1 space-x-1">
+          <div class="flex bg-ios-gray rounded-xl p-1 space-x-1 flex-wrap">
             <button class="mode-btn flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all" 
                     data-mode="vout">Hitung Vout</button>
             <button class="mode-btn flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all" 
                     data-mode="r1">Hitung R1</button>
             <button class="mode-btn flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all" 
                     data-mode="r2">Hitung R2</button>
+            <button class="mode-btn flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all" 
+                    data-mode="r1r2">Hitung R1 & R2 (E24)</button>
           </div>
         </div>
 
@@ -124,6 +127,7 @@
             <div class="text-xs text-gray-600 space-y-1">
               <div>Rasio: <span id="rasio" class="font-mono">—</span></div>
               <div>Arus: <span id="arus" class="font-mono">—</span></div>
+              <div id="error-container" class="hidden">Error: <span id="error" class="font-mono">—</span></div>
             </div>
           </div>
           
@@ -135,9 +139,17 @@
 
       <!-- Skematik Section - KANAN -->
       <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4 text-center">Skematik Rangkaian</h2>
-        <div class="flex justify-center">
-          <svg width="320" height="380" viewBox="0 0 320 380" class="border border-gray-200 rounded-lg bg-white">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold text-gray-900 text-center">Skematik Rangkaian</h2>
+          <button id="downloadSchematic" class="bg-ios-blue text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Unduh Gambar
+          </button>
+        </div>
+        <div class="flex justify-center" id="schematic-container">
+          <svg width="320" height="380" viewBox="0 0 320 380" class="border border-gray-200 rounded-lg bg-white" id="schematic-svg">
             <!-- Background -->
             <rect width="320" height="380" fill="#fafafa"/>
             
@@ -229,6 +241,25 @@
   </div>
 
   <script>
+    // Daftar nilai resistor E24 series (nilai standar yang tersedia di pasaran)
+    const E24_SERIES = [
+      1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.7, 3.0, 
+      3.3, 3.6, 3.9, 4.3, 4.7, 5.1, 5.6, 6.2, 6.8, 7.5, 8.2, 9.1,
+      10, 11, 12, 13, 15, 16, 18, 20, 22, 24, 27, 30, 
+      33, 36, 39, 43, 43, 47, 51, 56, 62, 68, 75, 82, 91,
+      100, 110, 120, 130, 150, 160, 180, 200, 220, 240, 270, 300,
+      330, 360, 390, 430, 470, 510, 560, 620, 680, 750, 820, 910,
+      1000, 1100, 1200, 1300, 1500, 1600, 1800, 2000, 2200, 2400, 2700, 3000,
+      3300, 3600, 3900, 4300, 4700, 5100, 5600, 6200, 6800, 7500, 8200, 9100,
+      10000, 11000, 12000, 13000, 15000, 16000, 18000, 20000, 22000, 24000, 27000, 30000,
+      33000, 36000, 39000, 43000, 47000, 51000, 56000, 62000, 68000, 75000, 82000, 91000,
+      100000, 110000, 120000, 130000, 150000, 160000, 180000, 200000, 220000, 240000, 270000, 300000,
+      330000, 360000, 390000, 430000, 470000, 510000, 560000, 620000, 680000, 750000, 820000, 910000,
+      1000000, 1100000, 1200000, 1300000, 1500000, 1600000, 1800000, 2000000, 2200000, 2400000, 2700000, 3000000,
+      3300000, 3600000, 3900000, 4300000, 4700000, 5100000, 5600000, 6200000, 6800000, 7500000, 8200000, 9100000,
+      10000000
+    ];
+
     const $ = (s) => document.querySelector(s);
     const modeBtns = document.querySelectorAll('.mode-btn');
     const fields = {
@@ -254,9 +285,9 @@
       });
 
       // Show/hide fields
-      fields.vout.style.display = (mode === 'r1' || mode === 'r2') ? 'block' : 'none';
-      fields.r1.style.display = mode !== 'r1' ? 'block' : 'none';
-      fields.r2.style.display = mode !== 'r2' ? 'block' : 'none';
+      fields.vout.style.display = (mode === 'r1' || mode === 'r2' || mode === 'r1r2') ? 'block' : 'none';
+      fields.r1.style.display = (mode === 'vout' || mode === 'r2') ? 'block' : 'none';
+      fields.r2.style.display = (mode === 'vout' || mode === 'r1') ? 'block' : 'none';
       
       updateStatus();
     }
@@ -267,7 +298,12 @@
         statusEl.textContent = message;
         statusEl.className = `text-sm text-center py-2 ${isError ? 'text-red-500' : 'text-ios-darkgray'}`;
       } else {
-        const modeNames = { vout: 'Vout', r1: 'R1', r2: 'R2' };
+        const modeNames = { 
+          vout: 'Vout', 
+          r1: 'R1', 
+          r2: 'R2', 
+          r1r2: 'R1 & R2 (E24 Series)' 
+        };
         statusEl.textContent = `Mode: Menghitung ${modeNames[currentMode]}`;
         statusEl.className = 'text-sm text-ios-darkgray text-center py-2';
       }
@@ -288,7 +324,27 @@
       return `${formatNumber(ohms)} Ω`;
     }
 
-    // FUNGSI BARU: Update skematik dengan nilai aktual
+    // Fungsi untuk mencari nilai resistor terdekat dalam seri E24
+    function findClosestResistor(target) {
+      // Jika target adalah 0, kembalikan 0
+      if (target === 0) return 0;
+      
+      // Cari nilai resistor yang paling mendekati
+      let closest = E24_SERIES[0];
+      let minDiff = Math.abs(target - closest);
+      
+      for (let i = 1; i < E24_SERIES.length; i++) {
+        const diff = Math.abs(target - E24_SERIES[i]);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closest = E24_SERIES[i];
+        }
+      }
+      
+      return closest;
+    }
+
+    // Update skematik dengan nilai aktual
     function updateSchematic(values = {}) {
       const { Vin, Vout, R1, R2, current } = values;
       
@@ -298,6 +354,23 @@
       $('#r1-label').textContent = R1 ? `R1 = ${formatResistance(R1)}` : 'R1 = —';
       $('#r2-label').textContent = R2 ? `R2 = ${formatResistance(R2)}` : 'R2 = —';
       $('#current-label').textContent = current ? `I = ${formatNumber(current, 3)}A` : 'I = —';
+    }
+
+    // Fungsi untuk mengunduh gambar skematik
+    function downloadSchematic() {
+      const container = document.getElementById('schematic-container');
+      
+      // Menggunakan html2canvas untuk mengkonversi elemen menjadi gambar
+      html2canvas(container, {
+        backgroundColor: '#ffffff',
+        scale: 2 // meningkatkan kualitas gambar
+      }).then(canvas => {
+        // Membuat link untuk mengunduh
+        const link = document.createElement('a');
+        link.download = 'skematik-pembagi-tegangan.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
     }
 
     function calculate() {
@@ -326,6 +399,7 @@
         $('#hasilUtama').textContent = `${formatNumber(result, 4)} V`;
         $('#rasio').textContent = formatNumber(ratio, 4);
         $('#arus').textContent = `${formatNumber(current, 4)} A`;
+        $('#error-container').classList.add('hidden');
         updateStatus('Perhitungan selesai');
         
         // Update skematik dengan nilai aktual
@@ -362,6 +436,7 @@
         $('#hasilUtama').textContent = formatResistance(R1);
         $('#rasio').textContent = formatNumber(ratio, 4);
         $('#arus').textContent = `${formatNumber(current, 4)} A`;
+        $('#error-container').classList.add('hidden');
         updateStatus('Perhitungan selesai');
         
         // Update skematik dengan nilai aktual
@@ -398,6 +473,7 @@
         $('#hasilUtama').textContent = formatResistance(R2);
         $('#rasio').textContent = formatNumber(ratio, 4);
         $('#arus').textContent = `${formatNumber(current, 4)} A`;
+        $('#error-container').classList.add('hidden');
         updateStatus('Perhitungan selesai');
         
         // Update skematik dengan nilai aktual
@@ -406,6 +482,68 @@
           Vout: Vout,
           R1: R1,
           R2: R2,
+          current: current
+        });
+      } else if (currentMode === 'r1r2') {
+        // Mode baru: Hitung R1 dan R2 berdasarkan nilai standar E24
+        if (Vout <= 0 || Vout >= Vin) {
+          updateStatus('Vout harus antara 0 dan Vin', true);
+          updateSchematic(); // Reset skematik
+          return;
+        }
+        
+        const desiredRatio = Vout / Vin;
+        let bestR1 = 0;
+        let bestR2 = 0;
+        let bestError = Infinity;
+        
+        // Iterasi melalui nilai-nilai resistor standar untuk mencari kombinasi terbaik
+        for (let i = 0; i < E24_SERIES.length; i++) {
+          const testR2 = E24_SERIES[i];
+          
+          // Hitung R1 yang diperlukan untuk mendapatkan rasio yang diinginkan
+          const neededR1 = (testR2 * (Vin - Vout)) / Vout;
+          
+          // Cari nilai R1 terdekat dalam seri E24
+          const testR1 = findClosestResistor(neededR1);
+          
+          // Hitung rasio aktual dengan nilai resistor standar
+          const actualRatio = testR2 / (testR1 + testR2);
+          const actualVout = Vin * actualRatio;
+          
+          // Hitung error (dalam persentase)
+          const error = Math.abs((actualVout - Vout) / Vout) * 100;
+          
+          // Simpan kombinasi jika error lebih kecil
+          if (error < bestError) {
+            bestError = error;
+            bestR1 = testR1;
+            bestR2 = testR2;
+          }
+          
+          // Hentikan pencarian jika error sudah sangat kecil
+          if (bestError < 0.1) break;
+        }
+        
+        // Hitung nilai aktual dengan resistor standar
+        const actualVout = Vin * (bestR2 / (bestR1 + bestR2));
+        const current = Vin / (bestR1 + bestR2);
+        const ratio = bestR2 / (bestR1 + bestR2);
+        
+        // Tampilkan hasil
+        $('#hasilUtama').textContent = `R1 = ${formatResistance(bestR1)}, R2 = ${formatResistance(bestR2)}`;
+        $('#rasio').textContent = formatNumber(ratio, 4);
+        $('#arus').textContent = `${formatNumber(current, 4)} A`;
+        $('#error').textContent = `${formatNumber(bestError, 3)}%`;
+        $('#error-container').classList.remove('hidden');
+        updateStatus('Perhitungan selesai');
+        
+        // Update skematik dengan nilai aktual
+        updateSchematic({
+          Vin: Vin,
+          Vout: actualVout,
+          R1: bestR1,
+          R2: bestR2,
           current: current
         });
       }
@@ -426,6 +564,7 @@
       $('#hasilUtama').textContent = '—';
       $('#rasio').textContent = '—';
       $('#arus').textContent = '—';
+      $('#error-container').classList.add('hidden');
       updateSchematic(); // Reset skematik juga
       updateStatus();
     }
@@ -445,6 +584,7 @@
       setMode('vout');
     });
     $('#applyExample').addEventListener('click', resetToExample);
+    $('#downloadSchematic').addEventListener('click', downloadSchematic);
 
     // Enter key support
     document.querySelectorAll('input').forEach(input => {
@@ -455,7 +595,6 @@
 
     // Initialize
     setMode('vout');
-    resetToExample();
   </script>
 </body>
 </html>
