@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator Pembagi Tegangan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ios: {
+              blue: '#007AFF',
+              gray: '#F2F2F7',
+              darkgray: '#8E8E93',
+              lightgray: '#F9F9F9'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-ios-gray min-h-screen">
+  <div class="max-w-6xl mx-auto p-4 space-y-6">
+    
+    <!-- Header -->
+    <div class="text-center pt-4 pb-2">
+      <h1 class="text-2xl font-semibold text-gray-900 mb-2">Kalkulator Pembagi Tegangan</h1>
+      <p class="text-sm text-ios-darkgray">Vout = Vin × R2 / (R1 + R2)</p>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6">
+      
+      <!-- Calculator Section - KIRI -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Kalkulator</h2>
+        
+        <!-- Mode Selection -->
+        <div class="mb-6">
+          <div class="flex bg-ios-gray rounded-xl p-1 space-x-1">
+            <button class="mode-btn flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all" 
+                    data-mode="vout">Hitung Vout</button>
+            <button class="mode-btn flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all" 
+                    data-mode="r1">Hitung R1</button>
+            <button class="mode-btn flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all" 
+                    data-mode="r2">Hitung R2</button>
+          </div>
+        </div>
+
+        <!-- Input Fields -->
+        <div class="space-y-4">
+          <!-- Vin -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Vin (Volt)</label>
+            <input type="number" id="vin" step="any" 
+                   class="w-full px-4 py-3 bg-ios-lightgray border-0 rounded-xl text-base focus:ring-2 focus:ring-ios-blue focus:outline-none"
+                   placeholder="Contoh: 5, 9, 12">
+          </div>
+
+          <!-- Vout -->
+          <div id="vout-field">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Vout (Volt)</label>
+            <input type="number" id="vout" step="any" 
+                   class="w-full px-4 py-3 bg-ios-lightgray border-0 rounded-xl text-base focus:ring-2 focus:ring-ios-blue focus:outline-none"
+                   placeholder="Contoh: 3.3, 2.5">
+            <p class="text-xs text-ios-darkgray mt-1">Diperlukan untuk menghitung R1 atau R2</p>
+          </div>
+
+          <!-- R1 -->
+          <div id="r1-field">
+            <label class="block text-sm font-medium text-gray-700 mb-2">R1 (Resistor Atas)</label>
+            <div class="flex space-x-2">
+              <input type="number" id="r1" step="any" 
+                     class="flex-1 px-4 py-3 bg-ios-lightgray border-0 rounded-xl text-base focus:ring-2 focus:ring-ios-blue focus:outline-none"
+                     placeholder="20">
+              <select id="r1u" class="px-4 py-3 bg-ios-lightgray border-0 rounded-xl text-base focus:ring-2 focus:ring-ios-blue focus:outline-none">
+                <option value="1">Ω</option>
+                <option value="1000" selected>kΩ</option>
+                <option value="1000000">MΩ</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- R2 -->
+          <div id="r2-field">
+            <label class="block text-sm font-medium text-gray-700 mb-2">R2 (Resistor Bawah)</label>
+            <div class="flex space-x-2">
+              <input type="number" id="r2" step="any" 
+                     class="flex-1 px-4 py-3 bg-ios-lightgray border-0 rounded-xl text-base focus:ring-2 focus:ring-ios-blue focus:outline-none"
+                     placeholder="10">
+              <select id="r2u" class="px-4 py-3 bg-ios-lightgray border-0 rounded-xl text-base focus:ring-2 focus:ring-ios-blue focus:outline-none">
+                <option value="1">Ω</option>
+                <option value="1000" selected>kΩ</option>
+                <option value="1000000">MΩ</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex space-x-3 mt-6">
+          <button id="btnHitung" 
+                  class="flex-1 bg-ios-blue text-white py-3 px-6 rounded-xl font-semibold hover:bg-blue-600 transition-colors">
+            Hitung
+          </button>
+          <button id="btnReset" 
+                  class="px-6 py-3 bg-ios-gray text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-colors">
+            Reset
+          </button>
+        </div>
+
+        <!-- Results -->
+        <div class="mt-6 space-y-3">
+          <div class="bg-blue-50 rounded-xl p-4">
+            <div class="flex justify-between items-center">
+              <span class="text-sm font-medium text-blue-800">Hasil:</span>
+              <span id="hasilUtama" class="text-xl font-bold text-blue-900">—</span>
+            </div>
+          </div>
+          
+          <div class="bg-gray-50 rounded-xl p-3">
+            <div class="text-xs text-gray-600 space-y-1">
+              <div>Rasio: <span id="rasio" class="font-mono">—</span></div>
+              <div>Arus: <span id="arus" class="font-mono">—</span></div>
+            </div>
+          </div>
+          
+          <div id="status" class="text-sm text-ios-darkgray text-center py-2">
+            Masukkan nilai dan klik Hitung
+          </div>
+        </div>
+      </div>
+
+      <!-- Skematik Section - KANAN -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4 text-center">Skematik Rangkaian</h2>
+        <div class="flex justify-center">
+          <svg width="320" height="380" viewBox="0 0 320 380" class="border border-gray-200 rounded-lg bg-white">
+            <!-- Background -->
+            <rect width="320" height="380" fill="#fafafa"/>
+            
+            <!-- Input voltage line -->
+            <line x1="60" y1="50" x2="260" y2="50" stroke="#333" stroke-width="3"/>
+            <text id="vin-label" x="160" y="40" text-anchor="middle" class="text-sm font-semibold" fill="#007AFF">Vin = —</text>
+            
+            <!-- Vertical line down -->
+            <line x1="60" y1="50" x2="60" y2="340" stroke="#333" stroke-width="3"/>
+            
+            <!-- R1 Resistor -->
+            <rect x="45" y="80" width="30" height="70" fill="none" stroke="#333" stroke-width="2" rx="4"/>
+            <line x1="60" y1="50" x2="60" y2="80" stroke="#333" stroke-width="2"/>
+            <line x1="60" y1="150" x2="60" y2="200" stroke="#333" stroke-width="2"/>
+            
+            <!-- Zigzag pattern inside R1 -->
+            <path d="M50 95 L56 105 L64 95 L70 105" fill="none" stroke="#666" stroke-width="1.5"/>
+            <path d="M50 115 L56 125 L64 115 L70 125" fill="none" stroke="#666" stroke-width="1.5"/>
+            <path d="M50 135 L56 145 L64 135 L70 145" fill="none" stroke="#666" stroke-width="1.5"/>
+            
+            <!-- R1 Label - Positioning diperbaiki -->
+            <text id="r1-label" x="90" y="120" class="text-sm font-semibold" fill="#333">R1 = —</text>
+            
+            <!-- Output point -->
+            <circle cx="60" cy="200" r="4" fill="#007AFF"/>
+            <line x1="60" y1="200" x2="200" y2="200" stroke="#007AFF" stroke-width="3"/>
+            
+            <!-- Vout Label - Positioning diperbaiki -->
+            <text id="vout-label" x="210" y="205" class="text-sm font-semibold" fill="#007AFF">Vout = —</text>
+            
+            <!-- R2 Resistor -->
+            <rect x="45" y="230" width="30" height="70" fill="none" stroke="#333" stroke-width="2" rx="4"/>
+            <line x1="60" y1="200" x2="60" y2="230" stroke="#333" stroke-width="2"/>
+            <line x1="60" y1="300" x2="60" y2="340" stroke="#333" stroke-width="2"/>
+            
+            <!-- Zigzag pattern inside R2 -->
+            <path d="M50 245 L56 255 L64 245 L70 255" fill="none" stroke="#666" stroke-width="1.5"/>
+            <path d="M50 265 L56 275 L64 265 L70 275" fill="none" stroke="#666" stroke-width="1.5"/>
+            <path d="M50 285 L56 295 L64 285 L70 295" fill="none" stroke="#666" stroke-width="1.5"/>
+            
+            <!-- R2 Label - Positioning diperbaiki -->
+            <text id="r2-label" x="90" y="270" class="text-sm font-semibold" fill="#333">R2 = —</text>
+            
+            <!-- Ground -->
+            <line x1="45" y1="340" x2="75" y2="340" stroke="#333" stroke-width="3"/>
+            <line x1="50" y1="345" x2="70" y2="345" stroke="#333" stroke-width="2"/>
+            <line x1="55" y1="350" x2="65" y2="350" stroke="#333" stroke-width="1"/>
+            <text x="85" y="345" class="text-sm font-medium" fill="#333">GND</text>
+            
+            <!-- Current direction arrow -->
+            <defs>
+              <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                      refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#FF6B6B" />
+              </marker>
+            </defs>
+            <path d="M25 80 Q15 200 25 320" fill="none" stroke="#FF6B6B" stroke-width="2" marker-end="url(#arrowhead)"/>
+            
+            <!-- Current Label - Positioning diperbaiki -->
+            <text id="current-label" x="10" y="205" text-anchor="middle" class="text-xs font-medium" fill="#FF6B6B">I = —</text>
+            
+            <!-- Connection dots untuk clarity -->
+            <circle cx="60" cy="50" r="2" fill="#333"/>
+            <circle cx="60" cy="340" r="2" fill="#333"/>
+          </svg>
+        </div>
+        <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+          <p class="text-xs text-blue-800 text-center">
+            Arus mengalir dari Vin melalui R1 dan R2 ke ground.<br>
+            Vout diukur pada titik tengah antara R1 dan R2.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Example -->
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+      <div class="flex flex-wrap justify-between items-center gap-4">
+        <div class="text-sm text-gray-600">
+          Contoh: <span class="font-semibold text-ios-blue">10V → 3.3V</span> dengan 
+          <span class="font-mono bg-gray-100 px-2 py-1 rounded">R2 = 10kΩ</span> 
+          membutuhkan <span class="font-mono bg-gray-100 px-2 py-1 rounded">R1 ≈ 20.3kΩ</span>
+        </div>
+        <button id="applyExample" class="text-ios-blue font-semibold text-sm hover:text-blue-600">
+          Gunakan Contoh
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const modeBtns = document.querySelectorAll('.mode-btn');
+    const fields = {
+      vout: $('#vout-field'),
+      r1: $('#r1-field'),
+      r2: $('#r2-field')
+    };
+    
+    let currentMode = 'vout';
+
+    function setMode(mode) {
+      currentMode = mode;
+      
+      // Update button styles
+      modeBtns.forEach(btn => {
+        if (btn.dataset.mode === mode) {
+          btn.classList.add('bg-white', 'text-ios-blue', 'shadow-sm');
+          btn.classList.remove('text-ios-darkgray');
+        } else {
+          btn.classList.remove('bg-white', 'text-ios-blue', 'shadow-sm');
+          btn.classList.add('text-ios-darkgray');
+        }
+      });
+
+      // Show/hide fields
+      fields.vout.style.display = (mode === 'r1' || mode === 'r2') ? 'block' : 'none';
+      fields.r1.style.display = mode !== 'r1' ? 'block' : 'none';
+      fields.r2.style.display = mode !== 'r2' ? 'block' : 'none';
+      
+      updateStatus();
+    }
+
+    function updateStatus(message = null, isError = false) {
+      const statusEl = $('#status');
+      if (message) {
+        statusEl.textContent = message;
+        statusEl.className = `text-sm text-center py-2 ${isError ? 'text-red-500' : 'text-ios-darkgray'}`;
+      } else {
+        const modeNames = { vout: 'Vout', r1: 'R1', r2: 'R2' };
+        statusEl.textContent = `Mode: Menghitung ${modeNames[currentMode]}`;
+        statusEl.className = 'text-sm text-ios-darkgray text-center py-2';
+      }
+    }
+
+    function getValue(id) { return Number($(id).value) || 0; }
+    function getResistance(valueId, unitId) { 
+      return getValue(valueId) * Number($(unitId).value); 
+    }
+    function formatNumber(num, precision = 3) {
+      if (!isFinite(num)) return '—';
+      return num.toPrecision(precision);
+    }
+    function formatResistance(ohms) {
+      if (!isFinite(ohms)) return '—';
+      if (ohms >= 1e6) return `${formatNumber(ohms/1e6)} MΩ`;
+      if (ohms >= 1e3) return `${formatNumber(ohms/1e3)} kΩ`;
+      return `${formatNumber(ohms)} Ω`;
+    }
+
+    // FUNGSI BARU: Update skematik dengan nilai aktual
+    function updateSchematic(values = {}) {
+      const { Vin, Vout, R1, R2, current } = values;
+      
+      // Update label di skematik
+      $('#vin-label').textContent = Vin ? `Vin = ${formatNumber(Vin, 3)}V` : 'Vin = —';
+      $('#vout-label').textContent = Vout ? `Vout = ${formatNumber(Vout, 3)}V` : 'Vout = —';
+      $('#r1-label').textContent = R1 ? `R1 = ${formatResistance(R1)}` : 'R1 = —';
+      $('#r2-label').textContent = R2 ? `R2 = ${formatResistance(R2)}` : 'R2 = —';
+      $('#current-label').textContent = current ? `I = ${formatNumber(current, 3)}A` : 'I = —';
+    }
+
+    function calculate() {
+      const Vin = getValue('#vin');
+      if (Vin <= 0) {
+        updateStatus('Masukkan nilai Vin yang valid (> 0)', true);
+        updateSchematic(); // Reset skematik
+        return;
+      }
+
+      let R1 = getResistance('#r1', '#r1u');
+      let R2 = getResistance('#r2', '#r2u');
+      const Vout = getValue('#vout');
+
+      if (currentMode === 'vout') {
+        if (R1 <= 0 || R2 <= 0) {
+          updateStatus('Masukkan nilai R1 dan R2 yang valid (> 0)', true);
+          updateSchematic(); // Reset skematik
+          return;
+        }
+        
+        const result = Vin * (R2 / (R1 + R2));
+        const ratio = R2 / (R1 + R2);
+        const current = Vin / (R1 + R2);
+        
+        $('#hasilUtama').textContent = `${formatNumber(result, 4)} V`;
+        $('#rasio').textContent = formatNumber(ratio, 4);
+        $('#arus').textContent = `${formatNumber(current, 4)} A`;
+        updateStatus('Perhitungan selesai');
+        
+        // Update skematik dengan nilai aktual
+        updateSchematic({
+          Vin: Vin,
+          Vout: result,
+          R1: R1,
+          R2: R2,
+          current: current
+        });
+        
+      } else if (currentMode === 'r1') {
+        if (R2 <= 0) {
+          updateStatus('Masukkan nilai R2 yang valid (> 0)', true);
+          updateSchematic(); // Reset skematik
+          return;
+        }
+        if (Vout <= 0 || Vout >= Vin) {
+          updateStatus('Vout harus antara 0 dan Vin', true);
+          updateSchematic(); // Reset skematik
+          return;
+        }
+        
+        R1 = (R2 * Vin) / Vout - R2;
+        if (R1 <= 0) {
+          updateStatus('Hasil R1 tidak valid. Periksa nilai input.', true);
+          updateSchematic(); // Reset skematik
+          return;
+        }
+        
+        const ratio = R2 / (R1 + R2);
+        const current = Vin / (R1 + R2);
+        
+        $('#hasilUtama').textContent = formatResistance(R1);
+        $('#rasio').textContent = formatNumber(ratio, 4);
+        $('#arus').textContent = `${formatNumber(current, 4)} A`;
+        updateStatus('Perhitungan selesai');
+        
+        // Update skematik dengan nilai aktual
+        updateSchematic({
+          Vin: Vin,
+          Vout: Vout,
+          R1: R1,
+          R2: R2,
+          current: current
+        });
+        
+      } else if (currentMode === 'r2') {
+        if (R1 <= 0) {
+          updateStatus('Masukkan nilai R1 yang valid (> 0)', true);
+          updateSchematic(); // Reset skematik
+          return;
+        }
+        if (Vout <= 0 || Vout >= Vin) {
+          updateStatus('Vout harus antara 0 dan Vin', true);
+          updateSchematic(); // Reset skematik
+          return;
+        }
+        
+        R2 = (Vout * R1) / (Vin - Vout);
+        if (R2 <= 0) {
+          updateStatus('Hasil R2 tidak valid. Periksa nilai input.', true);
+          updateSchematic(); // Reset skematik
+          return;
+        }
+        
+        const ratio = R2 / (R1 + R2);
+        const current = Vin / (R1 + R2);
+        
+        $('#hasilUtama').textContent = formatResistance(R2);
+        $('#rasio').textContent = formatNumber(ratio, 4);
+        $('#arus').textContent = `${formatNumber(current, 4)} A`;
+        updateStatus('Perhitungan selesai');
+        
+        // Update skematik dengan nilai aktual
+        updateSchematic({
+          Vin: Vin,
+          Vout: Vout,
+          R1: R1,
+          R2: R2,
+          current: current
+        });
+      }
+    }
+
+    function resetToExample() {
+      $('#vin').value = '10';
+      $('#vout').value = '3.3';
+      $('#r1').value = '20.3';
+      $('#r2').value = '10';
+      $('#r1u').value = '1000';
+      $('#r2u').value = '1000';
+      setMode('r1');
+      calculate();
+    }
+
+    function clearResults() {
+      $('#hasilUtama').textContent = '—';
+      $('#rasio').textContent = '—';
+      $('#arus').textContent = '—';
+      updateSchematic(); // Reset skematik juga
+      updateStatus();
+    }
+
+    // Event listeners
+    modeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        setMode(btn.dataset.mode);
+        clearResults();
+      });
+    });
+
+    $('#btnHitung').addEventListener('click', calculate);
+    $('#btnReset').addEventListener('click', () => {
+      document.querySelectorAll('input').forEach(input => input.value = '');
+      clearResults();
+      setMode('vout');
+    });
+    $('#applyExample').addEventListener('click', resetToExample);
+
+    // Enter key support
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('keypress', e => {
+        if (e.key === 'Enter') calculate();
+      });
+    });
+
+    // Initialize
+    setMode('vout');
+    resetToExample();
+  </script>
+</body>
+</html>
